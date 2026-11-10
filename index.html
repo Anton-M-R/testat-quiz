@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testat-Quiz · Programmieren 1</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #f4f1ea; --card: #fffdf8; --ink: #1d2433; --muted: #5d6677; --line: #d9d3c5;
+    --accent: #1f4f8f; --accent-ink: #ffffff;
+    --ok: #1b6e44; --ok-bg: #e2f1e7; --bad: #a3271f; --bad-bg: #f8e3df;
+    --code-bg: #ece7da; --d1: #1b6e44; --d2: #8a5a00; --d3: #a3271f;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171d; --card: #1c2029; --ink: #e8e6df; --muted: #9aa3b2; --line: #333a47;
+      --accent: #8fb8f0; --accent-ink: #10151d;
+      --ok: #7fd3a1; --ok-bg: #173325; --bad: #f09a90; --bad-bg: #3a1c19;
+      --code-bg: #262c38; --d1: #7fd3a1; --d2: #e6b95c; --d3: #f09a90;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 17px/1.55 -apple-system, "Segoe UI", system-ui, sans-serif; }
+  main { max-width: 820px; margin: 0 auto; padding: 28px 18px 80px; }
+  header.top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    border-bottom: 2px solid var(--ink); padding-bottom: 10px; margin-bottom: 22px; }
+  header.top h1 { font: 700 22px/1.2 Georgia, "Times New Roman", serif; margin: 0; letter-spacing: .2px; }
+  header.top .status { font-size: 13px; color: var(--muted); }
+  h2 { font: 700 19px/1.3 Georgia, serif; margin: 26px 0 10px; }
+  .hidden { display: none !important; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; }
+  .muted { color: var(--muted); }
+  .small { font-size: 14px; }
+
+  /* Start */
+  .topics { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+  button.topic { text-align: left; background: var(--card); color: var(--ink); border: 1px solid var(--line);
+    border-radius: 10px; padding: 14px 16px; cursor: pointer; font: inherit; }
+  button.topic:hover, button.topic:focus-visible { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: 0; }
+  button.topic b { display: block; font: 700 17px/1.3 Georgia, serif; }
+  button.topic span { display: block; font-size: 13.5px; color: var(--muted); margin-top: 3px; }
+  button.topic .meta { margin-top: 8px; font-size: 13px; color: var(--ink); }
+  button.topic.special { border-style: dashed; }
+  button.topic:disabled { opacity: .5; cursor: not-allowed; outline: none; border-color: var(--line); }
+  .opts { display: flex; flex-wrap: wrap; gap: 8px 26px; align-items: center; }
+  .opts fieldset { border: 0; padding: 0; margin: 0; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .opts legend { float: left; font-weight: 600; margin-right: 10px; padding: 0; }
+  .opts label { cursor: pointer; }
+  select { font: inherit; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+
+  /* Quiz */
+  .bar { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; margin: 6px 0 16px; }
+  .bar i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .2s; }
+  .qhead { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 14px; color: var(--muted); }
+  .badge { display: inline-block; font-size: 12.5px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase;
+    padding: 2px 9px; border-radius: 999px; border: 1.5px solid currentColor; }
+  .badge.d1 { color: var(--d1); } .badge.d2 { color: var(--d2); } .badge.d3 { color: var(--d3); }
+  .statement { font: 400 20px/1.5 Georgia, serif; margin: 14px 0 6px; }
+  code { font: 0.86em var(--mono); background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+  pre { font: 14px/1.5 var(--mono); background: var(--code-bg); padding: 12px 14px; border-radius: 8px;
+    overflow-x: auto; margin: 12px 0 4px; tab-size: 4; }
+  .answers { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px; }
+  .answers button { font-family: inherit; font-size: 18px; font-weight: 700; line-height: 1; padding: 16px; border-radius: 10px; cursor: pointer;
+    background: var(--card); color: var(--ink); border: 2px solid var(--ink); }
+  .answers button:hover:not(:disabled) { background: var(--ink); color: var(--card); }
+  .answers button kbd { font: 12px var(--mono); opacity: .6; margin-left: 8px; }
+  .answers button:disabled { cursor: default; opacity: .45; }
+  .answers button.chosen { opacity: 1; outline: 3px solid var(--accent); outline-offset: 2px; }
+  .verdict { margin-top: 16px; padding: 12px 16px; border-radius: 8px; border-left: 5px solid; }
+  .verdict.ok { background: var(--ok-bg); border-color: var(--ok); }
+  .verdict.bad { background: var(--bad-bg); border-color: var(--bad); }
+  .verdict strong { display: block; margin-bottom: 4px; }
+  .verdict.ok strong { color: var(--ok); } .verdict.bad strong { color: var(--bad); }
+  .note { margin-top: 18px; }
+  .note label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  textarea { width: 100%; min-height: 76px; resize: vertical; font-family: inherit; font-size: 15px; line-height: 1.45; padding: 9px 11px;
+    border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+  textarea:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+  .actions { display: flex; justify-content: space-between; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+  .btn { font-family: inherit; font-size: 16px; font-weight: 600; line-height: 1; padding: 12px 18px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .btn:focus-visible, .answers button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  /* Ergebnis */
+  .score { font: 700 44px/1 Georgia, serif; }
+  .saveinfo { margin-top: 10px; padding: 10px 14px; border-radius: 8px; background: var(--code-bg); font-size: 14.5px; word-break: break-word; }
+  .review { margin-top: 12px; }
+  .review .item { border-top: 1px solid var(--line); padding: 14px 0; }
+  .review .item:first-child { border-top: 0; }
+  .review .line { font-size: 14px; margin-top: 6px; }
+  .review textarea { min-height: 54px; margin-top: 8px; }
+  .tag-ok { color: var(--ok); font-weight: 700; } .tag-bad { color: var(--bad); font-weight: 700; }
+  details summary { cursor: pointer; font-weight: 600; margin-top: 18px; }
+</style>
+</head>
+<body>
+<main>
+  <header class="top">
+    <h1>Testat-Quiz · Programmieren 1</h1>
+    <div class="status" id="status">…</div>
+  </header>
+
+  <!-- Startseite -->
+  <section id="view-start">
+    <p>Wähle eine Lektion. Zu jeder Aussage entscheidest du: <b>Richtig</b> oder <b>Falsch</b> – wie im Probetestat.
+      Falsch beantwortete Fragen werden gemerkt; Notizen landen zusammen mit den Lösungen in einer Markdown-Datei.</p>
+
+    <div class="card opts" style="margin: 16px 0 6px">
+      <fieldset>
+        <legend>Schwierigkeit</legend>
+        <label><input type="checkbox" id="opt-d1" checked> Leicht</label>
+        <label><input type="checkbox" id="opt-d2" checked> Mittel</label>
+        <label><input type="checkbox" id="opt-d3" checked> Schwer</label>
+      </fieldset>
+      <label><b>Anzahl</b>
+        <select id="opt-count">
+          <option value="10">10 Fragen</option>
+          <option value="20" selected>20 Fragen</option>
+          <option value="30">30 Fragen</option>
+          <option value="0">alle</option>
+        </select>
+      </label>
+      <label><b>Reihenfolge</b>
+        <select id="opt-order">
+          <option value="random" selected>zufällig</option>
+          <option value="asc">leicht → schwer</option>
+        </select>
+      </label>
+    </div>
+
+    <h2>Lektionen</h2>
+    <div class="topics" id="topics"></div>
+
+    <h2>Gemischt &amp; Wiederholen</h2>
+    <div class="topics" id="specials"></div>
+
+    <p class="small muted" style="margin-top: 22px">Tastatur: <code>R</code> = Richtig, <code>F</code> = Falsch,
+      <code>Enter</code> = weiter, <code>N</code> = Notizfeld.</p>
+  </section>
+
+  <!-- Quiz -->
+  <section id="view-quiz" class="hidden">
+    <div class="qhead">
+      <span id="q-lesson"></span>
+      <span id="q-progress"></span>
+    </div>
+    <div class="bar"><i id="q-bar"></i></div>
+
+    <div class="card">
+      <div class="qhead">
+        <span id="q-topic"></span>
+        <span class="badge" id="q-diff"></span>
+      </div>
+      <div class="statement" id="q-text"></div>
+      <pre id="q-code" class="hidden"></pre>
+
+      <div class="answers">
+        <button id="btn-true" type="button">Richtig <kbd>R</kbd></button>
+        <button id="btn-false" type="button">Falsch <kbd>F</kbd></button>
+      </div>
+
+      <div id="q-verdict" class="verdict hidden" role="status" aria-live="polite"></div>
+
+      <div class="note">
+        <label for="q-note">Meine Notiz / Gedanken zu dieser Frage</label>
+        <textarea id="q-note" placeholder="Warum habe ich so geantwortet? Was ist mir unklar?"></textarea>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn" id="btn-quit" type="button">Beenden &amp; speichern</button>
+      <button class="btn primary" id="btn-next" type="button" disabled>Weiter →</button>
+    </div>
+  </section>
+
+  <!-- Ergebnis -->
+  <section id="view-result" class="hidden">
+    <div class="card">
+      <div class="muted small" id="r-lesson"></div>
+      <div class="score" id="r-score"></div>
+      <div id="r-detail" class="small" style="margin-top: 6px"></div>
+      <div class="saveinfo" id="r-save">Speichere …</div>
+    </div>
+
+    <h2 id="r-wrong-title">Falsch beantwortet</h2>
+    <div class="card review" id="r-wrong"></div>
+
+    <details>
+      <summary id="r-right-title">Richtig beantwortet</summary>
+      <div class="card review" id="r-right" style="margin-top: 10px"></div>
+    </details>
+
+    <div class="actions">
+      <button class="btn" id="btn-home" type="button">← Zur Übersicht</button>
+      <button class="btn primary" id="btn-retry" type="button">Fehler dieser Runde wiederholen</button>
+    </div>
+  </section>
+</main>
+
+<script src="questions.js"></script>
+<script>
+"use strict";
+(function () {
+  const DIFF = { 1: "Leicht", 2: "Mittel", 3: "Schwer" };
+  const LS_KEY = "testatquiz.state.v1";
+  const $ = (id) => document.getElementById(id);
+
+  // ---------- Fragen aufbereiten ----------
+  const ALL = [];
+  TOPICS.forEach((t) => t.q.forEach((q, i) => ALL.push({
+    id: t.id + "-" + (i + 1), topicId: t.id, topic: t.title,
+    d: q[0], a: q[1], text: q[2], expl: q[3], code: q[4] || "",
+  })));
+  const BY_ID = Object.fromEntries(ALL.map((q) => [q.id, q]));
+
+  // ---------- Zustand ----------
+  let state = { wrong: {} };      // gemerkte Fehler: id -> { n, last }
+  let serverOk = false;
+  let session = null;
+  let saveTimer = null;
+
+  function loadLocal() {
+    try { const s = JSON.parse(localStorage.getItem(LS_KEY)); if (s && s.wrong) state = s; } catch (e) { /* leer */ }
+  }
+  function persistState() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) { /* egal */ }
+    if (serverOk) {
+      fetch("/api/state", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(state) })
+        .catch(() => {});
+    }
+  }
+  async function initServer() {
+    if (location.protocol === "file:") return;
+    try {
+      const r = await fetch("/api/ping", { cache: "no-store" });
+      serverOk = r.ok && (await r.json()).ok === true;
+      if (serverOk) {
+        const s = await (await fetch("/api/state", { cache: "no-store" })).json();
+        if (s && s.wrong) {
+          // Server-Datei und Browser zusammenführen
+          for (const [id, v] of Object.entries(state.wrong)) if (!s.wrong[id]) s.wrong[id] = v;
+          state = s;
+        }
+      }
+    } catch (e) { serverOk = false; }
+  }
+  const wrongIds = () => Object.keys(state.wrong).filter((id) => BY_ID[id]);
+
+  // ---------- Hilfen ----------
+  const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const fmt = (s) => esc(s).replace(/«(.+?)»/g, "<code>$1</code>");
+  const md = (s) => s.replace(/«(.+?)»/g, "`$1`");
+  const pad = (n) => String(n).padStart(2, "0");
+  function shuffle(a) {
+    for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+    return a;
+  }
+  function stamp(d) {
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + "_" +
+      pad(d.getHours()) + "-" + pad(d.getMinutes()) + "-" + pad(d.getSeconds());
+  }
+  function human(d) {
+    return pad(d.getDate()) + "." + pad(d.getMonth() + 1) + "." + d.getFullYear() + " " + pad(d.getHours()) + ":" + pad(d.getMinutes());
+  }
+  function slug(s) {
+    return s.toLowerCase().replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss")
+      .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  }
+  function show(view) {
+    ["start", "quiz", "result"].forEach((v) => $("view-" + v).classList.toggle("hidden", v !== view));
+    window.scrollTo(0, 0);
+  }
+
+  // ---------- Startseite ----------
+  function selectedDiffs() { return [1, 2, 3].filter((d) => $("opt-d" + d).checked); }
+
+  function renderStart() {
+    const wrong = wrongIds();
+    $("status").textContent = (serverOk ? "Speichert in ergebnisse/" : "Ohne Server: Ergebnisse werden als Download gespeichert") +
+      " · " + wrong.length + " gemerkte Fehler";
+    const topics = $("topics"); topics.innerHTML = "";
+    TOPICS.forEach((t) => {
+      const open = wrong.filter((id) => BY_ID[id].topicId === t.id).length;
+      const b = document.createElement("button");
+      b.className = "topic"; b.type = "button";
+      b.innerHTML = "<b>" + esc(t.title) + "</b><span>" + esc(t.sub) + "</span>" +
+        "<div class='meta'>" + t.q.length + " Fragen" + (open ? " · " + open + " offene Fehler" : "") + "</div>";
+      b.onclick = () => start(t.title, ALL.filter((q) => q.topicId === t.id), "lektion");
+      topics.appendChild(b);
+    });
+    const sp = $("specials"); sp.innerHTML = "";
+    const mix = document.createElement("button");
+    mix.className = "topic special"; mix.type = "button";
+    mix.innerHTML = "<b>Alle Themen gemischt</b><span>Wie im Testat: quer durch alle Lektionen</span><div class='meta'>" + ALL.length + " Fragen im Pool</div>";
+    mix.onclick = () => start("Alle Themen gemischt", ALL, "gemischt");
+    sp.appendChild(mix);
+    const err = document.createElement("button");
+    err.className = "topic special"; err.type = "button"; err.disabled = wrong.length === 0;
+    err.innerHTML = "<b>Meine Fehler wiederholen</b><span>Richtig beantwortete Fragen fliegen hier aus der Fehlerliste</span><div class='meta'>" +
+      wrong.length + " gemerkte Fehler</div>";
+    err.onclick = () => start("Meine Fehler", wrong.map((id) => BY_ID[id]), "fehler", true);
+    sp.appendChild(err);
+  }
+
+  // ---------- Sitzung ----------
+  function start(label, pool, mode, ignoreOptions) {
+    let items = pool.slice();
+    if (!ignoreOptions) {
+      const ds = selectedDiffs();
+      items = items.filter((q) => ds.includes(q.d));
+    }
+    if (items.length === 0) { alertInline("Für diese Auswahl gibt es keine Fragen – bitte mindestens eine Schwierigkeit anhaken."); return; }
+    shuffle(items);
+    const max = ignoreOptions ? 0 : parseInt($("opt-count").value, 10);
+    if (max > 0) items = items.slice(0, max);
+    if (!ignoreOptions && $("opt-order").value === "asc") items.sort((x, y) => x.d - y.d);
+    const now = new Date();
+    session = {
+      label, mode, startedAt: now, endedAt: null, idx: 0,
+      file: stamp(now) + "_" + slug(label) + ".md",
+      items: items.map((q) => Object.assign({}, q, { answer: null, note: "" })),
+      savedOnce: false,
+    };
+    show("quiz"); renderQuestion();
+  }
+  function alertInline(msg) { $("status").textContent = msg; }
+
+  function renderQuestion() {
+    const it = session.items[session.idx];
+    const n = session.items.length;
+    $("q-lesson").textContent = session.label;
+    $("q-progress").textContent = "Frage " + (session.idx + 1) + " von " + n;
+    $("q-bar").style.width = (100 * session.idx / n) + "%";
+    $("q-topic").textContent = it.topic;
+    $("q-diff").textContent = DIFF[it.d]; $("q-diff").className = "badge d" + it.d;
+    $("q-text").innerHTML = fmt(it.text);
+    $("q-code").textContent = it.code; $("q-code").classList.toggle("hidden", !it.code);
+    $("q-note").value = it.note;
+    ["btn-true", "btn-false"].forEach((b) => { $(b).disabled = false; $(b).classList.remove("chosen"); });
+    $("q-verdict").classList.add("hidden");
+    $("btn-next").disabled = true;
+    $("btn-next").textContent = session.idx === n - 1 ? "Auswertung →" : "Weiter →";
+    $("status").textContent = serverOk ? "Speichert in ergebnisse/" : "Ohne Server: Download beim Beenden";
+  }
+
+  function answer(val) {
+    const it = session.items[session.idx];
+    if (it.answer !== null) return;
+    it.answer = val;
+    const ok = val === it.a;
+    if (!ok) {
+      const w = state.wrong[it.id] || { n: 0 };
+      state.wrong[it.id] = { n: w.n + 1, last: new Date().toISOString() };
+    } else if (session.mode === "fehler") {
+      delete state.wrong[it.id];
+    }
+    persistState();
+    $("btn-true").disabled = $("btn-false").disabled = true;
+    $(val ? "btn-true" : "btn-false").classList.add("chosen");
+    const v = $("q-verdict");
+    v.className = "verdict " + (ok ? "ok" : "bad");
+    v.innerHTML = "<strong>" + (ok ? "✓ Richtig beantwortet." : "✗ Leider falsch.") +
+      " Die Aussage ist " + (it.a ? "richtig" : "falsch") + ".</strong>" + fmt(it.expl);
+    $("btn-next").disabled = false;
+    $("btn-next").focus();
+  }
+
+  function next() {
+    if (session.idx < session.items.length - 1) { session.idx++; renderQuestion(); }
+    else finish();
+  }
+
+  // ---------- Markdown ----------
+  function buildMarkdown() {
+    const s = session;
+    const done = s.items.filter((i) => i.answer !== null);
+    const right = done.filter((i) => i.answer === i.a);
+    const wrong = done.filter((i) => i.answer !== i.a);
+    const open = s.items.length - done.length;
+    const end = s.endedAt || new Date();
+    const mins = Math.max(1, Math.round((end - s.startedAt) / 60000));
+    const pct = done.length ? Math.round(100 * right.length / done.length) : 0;
+    const L = [];
+    L.push("# Quiz-Sitzung: " + s.label, "");
+    L.push("- **Datum:** " + human(s.startedAt) + " Uhr (Dauer ca. " + mins + " min)");
+    L.push("- **Ergebnis:** " + right.length + " von " + done.length + " richtig (" + pct + " %)");
+    L.push("- **Falsch:** " + wrong.length + (open ? " · **Nicht beantwortet:** " + open + " (vorzeitig beendet)" : ""));
+    L.push("- **Zeitstempel:** " + end.toISOString(), "");
+    const block = (title, list) => {
+      if (!list.length) return;
+      L.push("## " + title, "");
+      list.forEach((i) => {
+        const nr = s.items.indexOf(i) + 1;
+        L.push("### Frage " + nr + " · " + i.topic + " · " + DIFF[i.d] + " · " + (i.answer === i.a ? "✅ richtig" : "❌ falsch"), "");
+        L.push("**Aussage:** " + md(i.text), "");
+        if (i.code) L.push("```java", i.code, "```", "");
+        L.push("- **Meine Antwort:** " + (i.answer ? "Richtig" : "Falsch"));
+        L.push("- **Lösung:** " + (i.a ? "Richtig" : "Falsch"));
+        L.push("- **Erklärung:** " + md(i.expl));
+        if (i.note.trim()) {
+          L.push("- **Meine Notiz:**", "");
+          i.note.trim().split(/\r?\n/).forEach((ln) => L.push("  > " + ln));
+        } else {
+          L.push("- **Meine Notiz:** –");
+        }
+        L.push("- *ID: " + i.id + "*", "");
+      });
+    };
+    block("Falsch beantwortet (" + wrong.length + ")", wrong);
+    block("Richtig beantwortet (" + right.length + ")", right);
+    return L.join("\n") + "\n";
+  }
+
+  function download(name, content) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([content], { type: "text/markdown;charset=utf-8" }));
+    a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+
+  async function save(isUpdate) {
+    const content = buildMarkdown();
+    const info = $("r-save");
+    if (serverOk) {
+      try {
+        const r = await fetch("/api/save", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filename: session.file, content }),
+        });
+        const j = await r.json();
+        if (!r.ok || !j.ok) throw new Error(j.error || "Fehler");
+        session.savedOnce = true;
+        info.innerHTML = "✓ Gespeichert: <code>" + esc(j.path) + "</code>" + (isUpdate ? " (Notizen aktualisiert)" : "");
+        return;
+      } catch (e) {
+        info.textContent = "Speichern über den Server fehlgeschlagen (" + e.message + ") – Datei wird stattdessen heruntergeladen.";
+      }
+    }
+    if (!isUpdate || !serverOk) {
+      if (isUpdate) { info.innerHTML = "Notizen geändert. <button class='btn' id='btn-dl'>Aktualisierte Datei herunterladen</button>";
+        $("btn-dl").onclick = () => download(session.file, buildMarkdown()); return; }
+      download(session.file, content); session.savedOnce = true;
+      info.innerHTML = "Heruntergeladen als <code>" + esc(session.file) + "</code>. Mit <code>python3 server.py</code> gestartet landet die Datei direkt im Ordner <code>ergebnisse/</code>.";
+    }
+  }
+
+  // ---------- Ergebnis ----------
+  function finish() {
+    session.endedAt = new Date();
+    const done = session.items.filter((i) => i.answer !== null);
+    if (done.length === 0) { session = null; show("start"); renderStart(); return; }
+    const right = done.filter((i) => i.answer === i.a);
+    const wrong = done.filter((i) => i.answer !== i.a);
+    $("r-lesson").textContent = session.label + " · " + human(session.startedAt) + " Uhr";
+    $("r-score").textContent = right.length + " / " + done.length;
+    const open = session.items.length - done.length;
+    $("r-detail").textContent = Math.round(100 * right.length / done.length) + " % richtig · " + wrong.length + " falsch" +
+      (open ? " · " + open + " nicht beantwortet" : "");
+    renderReview($("r-wrong"), wrong, "Alles richtig – stark!");
+    renderReview($("r-right"), right, "–");
+    $("r-wrong-title").textContent = "Falsch beantwortet (" + wrong.length + ")";
+    $("r-right-title").textContent = "Richtig beantwortet (" + right.length + ")";
+    $("btn-retry").disabled = wrong.length === 0;
+    $("status").textContent = wrongIds().length + " gemerkte Fehler insgesamt";
+    show("result");
+    save(false);
+  }
+
+  function renderReview(box, list, emptyText) {
+    box.innerHTML = "";
+    if (!list.length) { box.innerHTML = "<span class='muted'>" + emptyText + "</span>"; return; }
+    list.forEach((i) => {
+      const ok = i.answer === i.a;
+      const div = document.createElement("div"); div.className = "item";
+      div.innerHTML = "<div class='qhead'><span>" + esc(i.topic) + "</span><span class='badge d" + i.d + "'>" + DIFF[i.d] + "</span></div>" +
+        "<div style='margin-top:6px'>" + fmt(i.text) + "</div>" +
+        (i.code ? "<pre></pre>" : "") +
+        "<div class='line'><span class='" + (ok ? "tag-ok" : "tag-bad") + "'>Deine Antwort: " + (i.answer ? "Richtig" : "Falsch") + "</span>" +
+        " · Lösung: <b>" + (i.a ? "Richtig" : "Falsch") + "</b></div>" +
+        "<div class='line'>" + fmt(i.expl) + "</div>";
+      if (i.code) div.querySelector("pre").textContent = i.code;
+      const ta = document.createElement("textarea");
+      ta.placeholder = "Notiz ergänzen …"; ta.value = i.note; ta.setAttribute("aria-label", "Notiz zu dieser Frage");
+      ta.oninput = () => { i.note = ta.value; clearTimeout(saveTimer); saveTimer = setTimeout(() => save(true), 900); };
+      div.appendChild(ta);
+      box.appendChild(div);
+    });
+  }
+
+  // ---------- Ereignisse ----------
+  $("btn-true").onclick = () => answer(true);
+  $("btn-false").onclick = () => answer(false);
+  $("btn-next").onclick = next;
+  $("btn-quit").onclick = finish;
+  $("q-note").oninput = (e) => { if (session) session.items[session.idx].note = e.target.value; };
+  $("btn-home").onclick = () => { clearTimeout(saveTimer); session = null; show("start"); renderStart(); };
+  $("btn-retry").onclick = () => {
+    const wrong = session.items.filter((i) => i.answer !== null && i.answer !== i.a).map((i) => BY_ID[i.id]);
+    clearTimeout(saveTimer);
+    start("Fehler wiederholen (" + session.label + ")", wrong, "fehler", true);
+  };
+
+  document.addEventListener("keydown", (e) => {
+    if (!session || $("view-quiz").classList.contains("hidden")) return;
+    const inNote = document.activeElement === $("q-note");
+    if (inNote) {
+      if (e.key === "Escape") $("q-note").blur();
+      if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && !$("btn-next").disabled) { e.preventDefault(); next(); }
+      return;
+    }
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const k = e.key.toLowerCase();
+    if (k === "r") answer(true);
+    else if (k === "f") answer(false);
+    else if (k === "n") { e.preventDefault(); $("q-note").focus(); }
+    else if (e.key === "Enter" && !$("btn-next").disabled && document.activeElement !== $("btn-next")) { e.preventDefault(); next(); }
+  });
+
+  // Tab wird geschlossen, während eine Runde läuft: Zwischenstand sichern.
+  window.addEventListener("pagehide", () => {
+    if (!session || !serverOk) return;
+    const inQuiz = !$("view-quiz").classList.contains("hidden");
+    if (!inQuiz || !session.items.some((i) => i.answer !== null)) return;
+    session.endedAt = new Date();
+    navigator.sendBeacon("/api/save", new Blob([JSON.stringify({ filename: session.file, content: buildMarkdown() })],
+      { type: "application/json" }));
+  });
+
+  // ---------- Los ----------
+  loadLocal();
+  initServer().then(() => { persistState(); renderStart(); });
+})();
+</script>
+</body>
+</html>
